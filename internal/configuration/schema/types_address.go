@@ -22,7 +22,7 @@ func NewAddress(value string) (address *Address, err error) {
 // else without a scheme is the schemeDefault scheme.
 func NewAddressDefault(value, schemeDefault, schemeDefaultPath string) (address *Address, err error) {
 	if len(value) == 0 {
-		return &Address{true, false, -1, 0, &url.URL{Scheme: AddressSchemeTCP, Host: ":0"}}, nil
+		return &Address{true, false, false, -1, 0, &url.URL{Scheme: AddressSchemeTCP, Host: ":0"}}, nil
 	}
 
 	var u *url.URL
@@ -72,7 +72,7 @@ func NewAddressFromNetworkValuesDefault(value string, port int, schemeDefault, s
 
 // NewAddressUnix returns an *Address from a path value.
 func NewAddressUnix(path string) Address {
-	return Address{true, true, -1, 0, &url.URL{Scheme: AddressSchemeUnix, Path: path}}
+	return Address{true, true, false, -1, 0, &url.URL{Scheme: AddressSchemeUnix, Path: path}}
 }
 
 // NewAddressFromNetworkValues returns an *Address from network values.
@@ -82,7 +82,7 @@ func NewAddressFromNetworkValues(network, host string, port int) Address {
 
 // NewAddressFromNetworkPathValues returns an *Address from network values and a path.
 func NewAddressFromNetworkPathValues(network, host string, port int, path string) Address {
-	return Address{true, false, -1, port, &url.URL{Scheme: network, Host: fmt.Sprintf("%s:%d", host, port), Path: path}}
+	return Address{true, false, false, -1, port, &url.URL{Scheme: network, Host: fmt.Sprintf("%s:%d", host, port), Path: path}}
 }
 
 // NewSMTPAddress returns an *AddressSMTP from SMTP values.
@@ -109,7 +109,7 @@ func NewSMTPAddress(scheme, host string, port int) *AddressSMTP {
 		}
 	}
 
-	return &AddressSMTP{Address: Address{true, false, -1, port, &url.URL{Scheme: scheme, Host: fmt.Sprintf("%s:%d", host, port)}}}
+	return &AddressSMTP{Address: Address{true, false, false, -1, port, &url.URL{Scheme: scheme, Host: fmt.Sprintf("%s:%d", host, port)}}}
 }
 
 // NewAddressFromURL returns an *Address and error depending on the ability to parse the *url.URL as an Address.
@@ -184,10 +184,11 @@ func (AddressSMTP) JSONSchema() *jsonschema.Schema {
 
 // Address represents an address.
 type Address struct {
-	valid  bool
-	socket bool
-	umask  int
-	port   int
+	valid      bool
+	socket     bool
+	descriptor bool
+	umask      int
+	port       int
 
 	url *url.URL
 }
@@ -218,6 +219,11 @@ func (a *Address) Umask() string {
 // IsUnixDomainSocket returns true if the address has been determined to be a Unix Domain Socket.
 func (a *Address) IsUnixDomainSocket() bool {
 	return a.socket
+}
+
+// IsFileDescriptor returns true of the address has been determined to be a Systemd File Descriptor.
+func (a *Address) IsFileDescriptor() bool {
+	return a.descriptor
 }
 
 // IsTCP returns true if the address is one of the TCP schemes (not including application schemes that use TCP).
@@ -253,10 +259,10 @@ func (a *Address) IsExplicitlySecure() bool {
 // ValidateListener returns true if the Address is valid for a connection listener.
 func (a *Address) ValidateListener() error {
 	switch a.Scheme() {
-	case AddressSchemeTCP, AddressSchemeTCP4, AddressSchemeTCP6, AddressSchemeUDP, AddressSchemeUDP4, AddressSchemeUDP6, AddressSchemeUnix:
+	case AddressSchemeTCP, AddressSchemeTCP4, AddressSchemeTCP6, AddressSchemeUDP, AddressSchemeUDP4, AddressSchemeUDP6, AddressSchemeUnix, AddressSchemeFileDescriptor:
 		break
 	default:
-		return fmt.Errorf("scheme must be one of 'tcp', 'tcp4', 'tcp6', 'udp', 'udp4', 'udp6', or 'unix' but is configured as '%s'", a.Scheme())
+		return fmt.Errorf("scheme must be one of 'tcp', 'tcp4', 'tcp6', 'udp', 'udp4', 'udp6', 'unix', or 'fd' but is configured as '%s'", a.Scheme())
 	}
 
 	return nil
@@ -271,8 +277,10 @@ func (a *Address) ValidateHTTP() error {
 	switch a.Scheme() {
 	case AddressSchemeUnix:
 		return nil
+	case AddressSchemeFileDescriptor:
+		return nil
 	default:
-		return fmt.Errorf("scheme must be one of 'tcp', 'tcp4', 'tcp6', or 'unix' but is configured as '%s'", a.Scheme())
+		return fmt.Errorf("scheme must be one of 'tcp', 'tcp4', 'tcp6', 'unix', or 'fd' but is configured as '%s'", a.Scheme())
 	}
 }
 
@@ -296,7 +304,7 @@ func (a *Address) ValidateSQL() error {
 	case AddressSchemeUnix:
 		return nil
 	default:
-		return fmt.Errorf("scheme must be one of 'tcp', 'tcp4', 'tcp6', or 'unix' but is configured as '%s'", a.Scheme())
+		return fmt.Errorf("scheme must be one of 'tcp', 'tcp4', 'tcp6', 'unix', or 'fd' but is configured as '%s'", a.Scheme())
 	}
 }
 
@@ -422,6 +430,19 @@ func (a *Address) SocketHostname() string {
 	return a.url.Hostname()
 }
 
+// SocketHostname returns the correct hostname for a socket connection.
+func (a *Address) FileDescriptorHostname() string {
+	if !a.valid || a.url == nil {
+		return ""
+	}
+
+	if a.descriptor {
+		return a.url.Path
+	}
+
+	return a.url.Hostname()
+}
+
 // Network returns the Scheme() if it's appropriate for the net packages network arguments otherwise it returns tcp.
 func (a *Address) Network() string {
 	switch scheme := a.Scheme(); scheme {
@@ -484,6 +505,10 @@ func (a *Address) validate() (err error) {
 		}
 	case AddressSchemeLDAP, AddressSchemeLDAPS, AddressSchemeSMTP, AddressSchemeSUBMISSION, AddressSchemeSUBMISSIONS:
 		if err = a.validateProtocol(); err != nil {
+			return err
+		}
+	case AddressSchemeFileDescriptor:
+		if err = a.validateFileDescriptor(); err != nil {
 			return err
 		}
 	}
@@ -559,6 +584,33 @@ func (a *Address) validateUnixSocket() (err error) {
 	}
 
 	a.socket = true
+	a.umask = umask
+
+	return nil
+}
+
+func (a *Address) validateFileDescriptor() (err error) { // fd://4?umask=0022&path=auth
+	umask := -1
+
+	if a.url.Host != "" {
+		return fmt.Errorf("error validating the systemd file descriptor: the address '%s' appears to have a host but this is not valid for systemd file descriptors", a.url.String())
+	}
+
+	if a.url.Query().Has(addressQueryParamFileDescriptor) {
+		v := a.url.Query().Get(addressQueryParamFileDescriptor)
+
+		if !regexpIsUmask.MatchString(v) {
+			return fmt.Errorf("error validating the systemd file descriptor: could not parse address '%s': the address has a umask value of '%s' which does not appear to be a valid octal string", a.url.String(), v)
+		}
+
+		var p int64
+
+		p, _ = strconv.ParseInt(v, 8, 0)
+
+		umask = int(p)
+	}
+
+	a.descriptor = true
 	a.umask = umask
 
 	return nil

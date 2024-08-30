@@ -21,7 +21,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldParseBasicAddress",
 			"tcp://0.0.0.0:9091",
-			&Address{true, false, -1, 9091, &url.URL{Scheme: AddressSchemeTCP, Host: "0.0.0.0:9091"}},
+			&Address{true, false, false, -1, 9091, &url.URL{Scheme: AddressSchemeTCP, Host: "0.0.0.0:9091"}},
 			"0.0.0.0:9091",
 			"tcp://0.0.0.0:9091",
 			"",
@@ -29,7 +29,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldParseEmptyAddress",
 			"",
-			&Address{true, false, -1, 0, &url.URL{Scheme: AddressSchemeTCP, Host: ":0"}},
+			&Address{true, false, false, -1, 0, &url.URL{Scheme: AddressSchemeTCP, Host: ":0"}},
 			":0",
 			"tcp://:0",
 			"",
@@ -37,7 +37,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldParseAddressMissingScheme",
 			"0.0.0.0:9091",
-			&Address{true, false, -1, 9091, &url.URL{Scheme: AddressSchemeTCP, Host: "0.0.0.0:9091"}},
+			&Address{true, false, false, -1, 9091, &url.URL{Scheme: AddressSchemeTCP, Host: "0.0.0.0:9091"}},
 			"0.0.0.0:9091",
 			"tcp://0.0.0.0:9091",
 			"",
@@ -45,7 +45,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldParseUnixAddressMissingScheme",
 			"/var/run/example.sock",
-			&Address{true, true, -1, 0, &url.URL{Scheme: AddressSchemeUnix, Path: "/var/run/example.sock"}},
+			&Address{true, true, false, -1, 0, &url.URL{Scheme: AddressSchemeUnix, Path: "/var/run/example.sock"}},
 			"/var/run/example.sock",
 			"unix:///var/run/example.sock",
 			"",
@@ -53,7 +53,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldParseAddressMissingPort",
 			"tcp://0.0.0.0",
-			&Address{true, false, -1, 0, &url.URL{Scheme: AddressSchemeTCP, Host: "0.0.0.0:0"}},
+			&Address{true, false, false, -1, 0, &url.URL{Scheme: AddressSchemeTCP, Host: "0.0.0.0:0"}},
 			"0.0.0.0:0",
 			"tcp://0.0.0.0:0",
 			"",
@@ -69,7 +69,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldParseUnixSocket",
 			"unix:///path/to/a/socket.sock",
-			&Address{true, true, -1, 0, &url.URL{Scheme: AddressSchemeUnix, Path: "/path/to/a/socket.sock"}},
+			&Address{true, true, false, -1, 0, &url.URL{Scheme: AddressSchemeUnix, Path: "/path/to/a/socket.sock"}},
 			"/path/to/a/socket.sock",
 			"unix:///path/to/a/socket.sock",
 			"",
@@ -93,7 +93,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldParseUnixSocketWithQuery",
 			"unix:///path/to/a/socket.sock?umask=0022",
-			&Address{true, true, 18, 0, &url.URL{Scheme: AddressSchemeUnix, Path: "/path/to/a/socket.sock", RawQuery: "umask=0022"}},
+			&Address{true, true, false, 18, 0, &url.URL{Scheme: AddressSchemeUnix, Path: "/path/to/a/socket.sock", RawQuery: "umask=0022"}},
 			"/path/to/a/socket.sock",
 			"unix:///path/to/a/socket.sock?umask=0022",
 			"",
@@ -117,7 +117,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldParseUnknownScheme",
 			"a://0.0.0.0",
-			&Address{true, false, -1, 0, &url.URL{Scheme: "a", Host: "0.0.0.0"}},
+			&Address{true, false, false, -1, 0, &url.URL{Scheme: "a", Host: "0.0.0.0"}},
 			"0.0.0.0",
 			"a://0.0.0.0",
 			"",
@@ -149,7 +149,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldSetDefaultPortLDAP",
 			"ldap://127.0.0.1",
-			&Address{true, false, -1, 389, &url.URL{Scheme: AddressSchemeLDAP, Host: "127.0.0.1:389"}},
+			&Address{true, false, false, -1, 389, &url.URL{Scheme: AddressSchemeLDAP, Host: "127.0.0.1:389"}},
 			"127.0.0.1:389",
 			"ldap://127.0.0.1:389",
 			"",
@@ -157,7 +157,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldSetDefaultPortLDAPS",
 			"ldaps://127.0.0.1",
-			&Address{true, false, -1, 636, &url.URL{Scheme: AddressSchemeLDAPS, Host: "127.0.0.1:636"}},
+			&Address{true, false, false, -1, 636, &url.URL{Scheme: AddressSchemeLDAPS, Host: "127.0.0.1:636"}},
 			"127.0.0.1:636",
 			"ldaps://127.0.0.1:636",
 			"",
@@ -165,7 +165,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldAllowLDAPI",
 			"ldapi:///abc",
-			&Address{true, true, -1, 0, &url.URL{Scheme: AddressSchemeLDAPI, Path: "/abc"}},
+			&Address{true, true, false, -1, 0, &url.URL{Scheme: AddressSchemeLDAPI, Path: "/abc"}},
 			"/abc",
 			"ldapi:///abc",
 			"",
@@ -173,7 +173,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldAllowImplicitLDAPI",
 			"ldapi://",
-			&Address{true, true, -1, 0, &url.URL{Scheme: AddressSchemeLDAPI, Path: ""}},
+			&Address{true, true, false, -1, 0, &url.URL{Scheme: AddressSchemeLDAPI, Path: ""}},
 			"",
 			"ldapi:",
 			"",
@@ -181,7 +181,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldAllowImplicitLDAPINoSlash",
 			"ldapi:",
-			&Address{true, true, -1, 0, &url.URL{Scheme: AddressSchemeLDAPI, Path: ""}},
+			&Address{true, true, false, -1, 0, &url.URL{Scheme: AddressSchemeLDAPI, Path: ""}},
 			"",
 			"ldapi:",
 			"",
@@ -189,7 +189,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldSetDefaultPortSMTP",
 			"smtp://127.0.0.1",
-			&Address{true, false, -1, 25, &url.URL{Scheme: AddressSchemeSMTP, Host: "127.0.0.1:25"}},
+			&Address{true, false, false, -1, 25, &url.URL{Scheme: AddressSchemeSMTP, Host: "127.0.0.1:25"}},
 			"127.0.0.1:25",
 			"smtp://127.0.0.1:25",
 			"",
@@ -197,7 +197,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldSetDefaultPortSUBMISSION",
 			"submission://127.0.0.1",
-			&Address{true, false, -1, 587, &url.URL{Scheme: AddressSchemeSUBMISSION, Host: "127.0.0.1:587"}},
+			&Address{true, false, false, -1, 587, &url.URL{Scheme: AddressSchemeSUBMISSION, Host: "127.0.0.1:587"}},
 			"127.0.0.1:587",
 			"submission://127.0.0.1:587",
 			"",
@@ -205,7 +205,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldSetDefaultPortSUBMISSIONS",
 			"submissions://127.0.0.1",
-			&Address{true, false, -1, 465, &url.URL{Scheme: AddressSchemeSUBMISSIONS, Host: "127.0.0.1:465"}},
+			&Address{true, false, false, -1, 465, &url.URL{Scheme: AddressSchemeSUBMISSIONS, Host: "127.0.0.1:465"}},
 			"127.0.0.1:465",
 			"submissions://127.0.0.1:465",
 			"",
@@ -213,7 +213,7 @@ func TestNewAddressFromString(t *testing.T) {
 		{
 			"ShouldNotOverridePort",
 			"ldap://127.0.0.1:123",
-			&Address{true, false, -1, 123, &url.URL{Scheme: AddressSchemeLDAP, Host: "127.0.0.1:123"}},
+			&Address{true, false, false, -1, 123, &url.URL{Scheme: AddressSchemeLDAP, Host: "127.0.0.1:123"}},
 			"127.0.0.1:123",
 			"ldap://127.0.0.1:123",
 			"",
@@ -248,25 +248,25 @@ func TestAddress_ValidateErrors(t *testing.T) {
 	}{
 		{
 			"ShouldValidateLDAPAddress",
-			&Address{true, false, -1, 0, &url.URL{Scheme: AddressSchemeLDAP, Host: "127.0.0.1"}},
+			&Address{true, false, false, -1, 0, &url.URL{Scheme: AddressSchemeLDAP, Host: "127.0.0.1"}},
 			"",
 			"scheme must be one of 'smtp', 'submission', or 'submissions' but is configured as 'ldap'",
-			"scheme must be one of 'tcp', 'tcp4', 'tcp6', or 'unix' but is configured as 'ldap'",
-			"scheme must be one of 'tcp', 'tcp4', 'tcp6', or 'unix' but is configured as 'ldap'",
-			"scheme must be one of 'tcp', 'tcp4', 'tcp6', 'udp', 'udp4', 'udp6', or 'unix' but is configured as 'ldap'",
+			"scheme must be one of 'tcp', 'tcp4', 'tcp6', 'unix', or 'fd' but is configured as 'ldap'",
+			"scheme must be one of 'tcp', 'tcp4', 'tcp6', 'unix', or 'fd' but is configured as 'ldap'",
+			"scheme must be one of 'tcp', 'tcp4', 'tcp6', 'udp', 'udp4', 'udp6', 'unix', or 'fd' but is configured as 'ldap'",
 		},
 		{
 			"ShouldValidateSMTPAddress",
-			&Address{true, false, -1, 0, &url.URL{Scheme: AddressSchemeSMTP, Host: "127.0.0.1"}},
+			&Address{true, false, false, -1, 0, &url.URL{Scheme: AddressSchemeSMTP, Host: "127.0.0.1"}},
 			"scheme must be one of 'ldap', 'ldaps', or 'ldapi' but is configured as 'smtp'",
 			"",
-			"scheme must be one of 'tcp', 'tcp4', 'tcp6', or 'unix' but is configured as 'smtp'",
-			"scheme must be one of 'tcp', 'tcp4', 'tcp6', or 'unix' but is configured as 'smtp'",
-			"scheme must be one of 'tcp', 'tcp4', 'tcp6', 'udp', 'udp4', 'udp6', or 'unix' but is configured as 'smtp'",
+			"scheme must be one of 'tcp', 'tcp4', 'tcp6', 'unix', or 'fd' but is configured as 'smtp'",
+			"scheme must be one of 'tcp', 'tcp4', 'tcp6', 'unix', or 'fd' but is configured as 'smtp'",
+			"scheme must be one of 'tcp', 'tcp4', 'tcp6', 'udp', 'udp4', 'udp6', 'unix', or 'fd' but is configured as 'smtp'",
 		},
 		{
 			"ShouldValidateTCPAddress",
-			&Address{true, false, -1, 0, &url.URL{Scheme: AddressSchemeTCP, Host: "127.0.0.1"}},
+			&Address{true, false, false, -1, 0, &url.URL{Scheme: AddressSchemeTCP, Host: "127.0.0.1"}},
 			"scheme must be one of 'ldap', 'ldaps', or 'ldapi' but is configured as 'tcp'",
 			"scheme must be one of 'smtp', 'submission', or 'submissions' but is configured as 'tcp'",
 			"",
@@ -275,7 +275,7 @@ func TestAddress_ValidateErrors(t *testing.T) {
 		},
 		{
 			"ShouldValidateUnixSocket",
-			&Address{true, true, -1, 0, &url.URL{Scheme: AddressSchemeUnix, Path: "/path/to/socket"}},
+			&Address{true, true, false, -1, 0, &url.URL{Scheme: AddressSchemeUnix, Path: "/path/to/socket"}},
 			"scheme must be one of 'ldap', 'ldaps', or 'ldapi' but is configured as 'unix'",
 			"scheme must be one of 'smtp', 'submission', or 'submissions' but is configured as 'unix'",
 			"",
@@ -320,7 +320,7 @@ func TestAddress_ValidateErrors(t *testing.T) {
 }
 
 func TestAddress_SetHostname(t *testing.T) {
-	address := &Address{true, false, -1, 0, &url.URL{Scheme: AddressSchemeTCP, Host: "0.0.0.0"}}
+	address := &Address{true, false, false, -1, 0, &url.URL{Scheme: AddressSchemeTCP, Host: "0.0.0.0"}}
 
 	assert.Equal(t, "tcp://0.0.0.0", address.String())
 
@@ -339,7 +339,7 @@ func TestAddressOutputValues(t *testing.T) {
 	address = &Address{}
 	assert.EqualError(t, address.validate(), "error validating the address: address url was nil")
 
-	address = &Address{false, false, -1, 0, nil}
+	address = &Address{false, false, false, -1, 0, nil}
 
 	assert.Equal(t, "", address.String())
 	assert.Equal(t, "", address.Scheme())
@@ -353,7 +353,7 @@ func TestAddressOutputValues(t *testing.T) {
 	assert.Nil(t, listener)
 	assert.EqualError(t, err, "address url is nil")
 
-	address = &Address{true, false, -1, 8080, &url.URL{Scheme: AddressSchemeTCP, Host: "0.0.0.0:8080"}}
+	address = &Address{true, false, false, -1, 8080, &url.URL{Scheme: AddressSchemeTCP, Host: "0.0.0.0:8080"}}
 
 	assert.Equal(t, "tcp://0.0.0.0:8080", address.String())
 	assert.Equal(t, "tcp", address.Scheme())
@@ -367,7 +367,7 @@ func TestAddressOutputValues(t *testing.T) {
 	assert.NotNil(t, listener)
 	assert.NoError(t, err)
 
-	address = &Address{true, false, -1, 0, nil}
+	address = &Address{true, false, false, -1, 0, nil}
 
 	assert.Equal(t, "", address.String())
 	assert.Equal(t, "", address.Scheme())
@@ -396,7 +396,7 @@ func TestAddressOutputValues(t *testing.T) {
 	assert.Nil(t, listener)
 	assert.EqualError(t, err, "address url is nil")
 
-	address = &Address{true, false, -1, 9091, &url.URL{Scheme: AddressSchemeTCP, Host: "0.0.0.0:9091"}}
+	address = &Address{true, false, false, -1, 9091, &url.URL{Scheme: AddressSchemeTCP, Host: "0.0.0.0:9091"}}
 
 	assert.Equal(t, "tcp://0.0.0.0:9091", address.String())
 	assert.Equal(t, "tcp", address.Scheme())
@@ -562,19 +562,19 @@ func TestAddress_Dial(t *testing.T) {
 	}{
 		{
 			"ShouldNotDialNil",
-			Address{true, false, -1, 0, nil},
+			Address{true, false, false, -1, 0, nil},
 			false,
 			"address url is nil",
 		},
 		{
 			"ShouldNotDialInvalid",
-			Address{false, false, -1, 0, &url.URL{}},
+			Address{false, false, false, -1, 0, &url.URL{}},
 			false,
 			"address url is nil",
 		},
 		{
 			"ShouldNotDialInvalidAddress",
-			Address{true, false, -1, 0, &url.URL{Scheme: "abc", Host: "127.0.0.1:0"}},
+			Address{true, false, false, -1, 0, &url.URL{Scheme: "abc", Host: "127.0.0.1:0"}},
 			false,
 			"dial tcp 127.0.0.1:0: connect: connection refused",
 		},
@@ -705,22 +705,22 @@ func TestAddress_SocketHostname(t *testing.T) {
 	}{
 		{
 			"ShouldReturnHostname",
-			Address{true, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "examplea:80"}},
+			Address{true, false, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "examplea:80"}},
 			"examplea",
 		},
 		{
 			"ShouldReturnPath",
-			Address{true, true, -1, 80, &url.URL{Scheme: AddressSchemeUnix, Path: "/abc/123"}},
+			Address{true, true, false, -1, 80, &url.URL{Scheme: AddressSchemeUnix, Path: "/abc/123"}},
 			"/abc/123",
 		},
 		{
 			"ShouldReturnNothing",
-			Address{false, true, -1, 80, &url.URL{Scheme: AddressSchemeUnix, Path: "/abc/123"}},
+			Address{false, true, false, -1, 80, &url.URL{Scheme: AddressSchemeUnix, Path: "/abc/123"}},
 			"",
 		},
 		{
 			"ShouldReturnNothingNil",
-			Address{true, true, -1, 80, nil},
+			Address{true, true, false, -1, 80, nil},
 			"",
 		},
 	}
@@ -740,22 +740,22 @@ func TestAddress_Path(t *testing.T) {
 	}{
 		{
 			"ShouldReturnEmptyPath",
-			Address{true, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta"}},
+			Address{true, false, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta"}},
 			"",
 		},
 		{
 			"ShouldReturnPath",
-			Address{true, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta", Path: "/apath"}},
+			Address{true, false, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta", Path: "/apath"}},
 			"/apath",
 		},
 		{
 			"ShouldNotReturnPathInvalid",
-			Address{false, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta", Path: "/apath"}},
+			Address{false, false, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta", Path: "/apath"}},
 			"",
 		},
 		{
 			"ShouldNotReturnPathNil",
-			Address{true, false, -1, 80, nil},
+			Address{true, false, false, -1, 80, nil},
 			"",
 		},
 	}
@@ -775,22 +775,22 @@ func TestAddress_RouterPath(t *testing.T) {
 	}{
 		{
 			"ShouldReturnEmptyPath",
-			Address{true, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta"}},
+			Address{true, false, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta"}},
 			"",
 		},
 		{
 			"ShouldReturnPath",
-			Address{true, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta", Path: "/apath"}},
+			Address{true, false, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta", Path: "/apath"}},
 			"/apath",
 		},
 		{
 			"ShouldNotReturnPathInvalid",
-			Address{false, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta", Path: "/apath"}},
+			Address{false, false, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta", Path: "/apath"}},
 			"",
 		},
 		{
 			"ShouldNotReturnPathNil",
-			Address{true, false, -1, 80, nil},
+			Address{true, false, false, -1, 80, nil},
 			"",
 		},
 	}
@@ -811,49 +811,49 @@ func TestAddress_IsTCP_IsUDP(t *testing.T) {
 	}{
 		{
 			"ShouldReturnTrueTCP",
-			Address{true, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta"}},
+			Address{true, false, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP, Host: "tcphosta"}},
 			true,
 			false,
 		},
 		{
 			"ShouldReturnTrueTCP4",
-			Address{true, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP4, Host: "tcphostb"}},
+			Address{true, false, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP4, Host: "tcphostb"}},
 			true,
 			false,
 		},
 		{
 			"ShouldReturnTrueTCP6",
-			Address{true, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP6, Host: "tcphostc"}},
+			Address{true, false, false, -1, 80, &url.URL{Scheme: AddressSchemeTCP6, Host: "tcphostc"}},
 			true,
 			false,
 		},
 		{
 			"ShouldReturnFalseUDP",
-			Address{true, false, -1, 80, &url.URL{Scheme: AddressSchemeUDP, Host: "tcphostd"}},
+			Address{true, false, false, -1, 80, &url.URL{Scheme: AddressSchemeUDP, Host: "tcphostd"}},
 			false,
 			true,
 		},
 		{
 			"ShouldReturnFalseUDP4",
-			Address{true, false, -1, 80, &url.URL{Scheme: AddressSchemeUDP4, Host: "tcphoste"}},
+			Address{true, false, false, -1, 80, &url.URL{Scheme: AddressSchemeUDP4, Host: "tcphoste"}},
 			false,
 			true,
 		},
 		{
 			"ShouldReturnFalseUDP6",
-			Address{true, false, -1, 80, &url.URL{Scheme: AddressSchemeUDP6, Host: "tcphostf"}},
+			Address{true, false, false, -1, 80, &url.URL{Scheme: AddressSchemeUDP6, Host: "tcphostf"}},
 			false,
 			true,
 		},
 		{
 			"ShouldReturnFalseSMTP",
-			Address{true, false, -1, 80, &url.URL{Scheme: AddressSchemeSMTP, Host: "tcphostg"}},
+			Address{true, false, false, -1, 80, &url.URL{Scheme: AddressSchemeSMTP, Host: "tcphostg"}},
 			false,
 			false,
 		},
 		{
 			"ShouldReturnFalseUnix",
-			Address{true, true, -1, 80, &url.URL{Scheme: AddressSchemeUnix, Host: "tcphosth"}},
+			Address{true, true, false, -1, 80, &url.URL{Scheme: AddressSchemeUnix, Host: "tcphosth"}},
 			false,
 			false,
 		},

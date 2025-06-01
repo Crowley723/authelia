@@ -5,6 +5,7 @@ import (
 )
 
 // UserProvider is the interface for interacting with the authentication backends.
+// UserProvider is the interface for interacting with the authentication backends.
 type UserProvider interface {
 	model.StartupCheck
 
@@ -28,9 +29,13 @@ type UserProvider interface {
 
 	UpdateUser(username string, opts ...func(options *ModifyUserDetailsOpts)) (err error)
 
-	AddUser(username, displayName, password string, opts ...func(options *NewUserAdditionalAttributesOpts)) (err error)
+	AddUser(userData *NewUserData) (err error)
 
 	DeleteUser(username string) (err error)
+
+	GetRequiredFields() []string
+	GetSupportedFields() []string
+	ValidateUserData(userData *NewUserData) error
 
 	Close() (err error)
 }

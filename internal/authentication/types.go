@@ -16,42 +16,60 @@ type UserDetails struct {
 	Groups      []string
 }
 
-type NewUserAdditionalAttributesOpts struct {
-	Email               *string
-	Disabled            *bool
-	Groups              []string
-	DisplayName         *string
-	ExtendedUserDetails *UserDetailsExtended
+// NewUserData is used to standardize the various attributes used among the various ldap backends.
+type NewUserData struct {
+	// Core required fields (common across backends)
+	Username string
+	Password string
+
+	// Display name variations
+	DisplayName string // File backend uses this
+	CommonName  string // LDAP cn attribute
+	GivenName   string // LDAP givenName
+	FamilyName  string // LDAP sn (surname)
+
+	Email  string
+	Emails []string
+
+	Groups []string
+
+	Extended *UserDetailsExtended
+
+	// For cases where backends need attributes not covered above
+	//TODO: evaluate if this is actually needed.
+	BackendAttributes map[string]interface{}
+
+	DN          string // Distinguished Name
+	ObjectClass []string
+
+	Disabled bool
 }
 
-type ModifyUserAdditionalAttributesOpts struct {
-	NewUserAttributes NewUserAdditionalAttributesOpts
-	Password          *string
+type FieldMetadata struct {
+	Required    bool   `json:"required"`
+	DisplayName string `json:"displayName"`
+	Description string `json:"description"`
+	Type        string `json:"type"` // "string", "email", "password", "array"
+	MaxLength   int    `json:"maxLength,omitempty"`
+	Pattern     string `json:"pattern,omitempty"`
 }
 
-func WithEmail(email string) func(detailsOpts *NewUserAdditionalAttributesOpts) {
-	return func(opts *NewUserAdditionalAttributesOpts) {
-		opts.Email = &email
+func (u *NewUserData) HasDisplayNameInfo() bool {
+	return u.DisplayName != "" || u.CommonName != "" || (u.GivenName != "" && u.FamilyName != "")
+}
+
+func (u *NewUserData) GetEffectiveDisplayName() string {
+	if u.DisplayName != "" {
+		return u.DisplayName
 	}
-}
-
-func WithGroups(groups []string) func(detailsOpts *NewUserAdditionalAttributesOpts) {
-	return func(opts *NewUserAdditionalAttributesOpts) {
-		opts.Groups = groups
+	if u.CommonName != "" {
+		return u.CommonName
 	}
+	if u.GivenName != "" && u.FamilyName != "" {
+		return fmt.Sprintf("%s %s", u.GivenName, u.FamilyName)
+	}
+	return u.Username
 }
-
-type ModifyUserDetailsOpts struct {
-	Password    *string
-	DisplayName *string
-	Email       *string
-	Disabled    *bool
-	Groups      []string
-}
-
-func (o *ModifyUserDetailsOpts) SetEmail(email *string)     { o.Email = email }
-func (o *ModifyUserDetailsOpts) SetDisabled(disabled *bool) { o.Disabled = disabled }
-func (o *ModifyUserDetailsOpts) SetGroups(groups []string)  { o.Groups = groups }
 
 // Addresses returns the Emails []string as []mail.Address formatted with DisplayName as the Name attribute.
 func (d *UserDetails) Addresses() (addresses []mail.Address) {

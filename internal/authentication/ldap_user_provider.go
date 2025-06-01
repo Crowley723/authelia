@@ -247,6 +247,45 @@ func (p *LDAPUserProvider) GetDetailsExtended(username string) (details *UserDet
 	return details, nil
 }
 
+func (p *LDAPUserProvider) GetRequiredFields() []string {
+	switch p.config.Implementation {
+	case "rfc2307bis":
+		return p.getRFC2307bisRequiredFields()
+	case "activedirectory":
+		//return p.getActiveDirectoryRequiredFields()
+	}
+	return p.getRFC2307bisRequiredFields()
+}
+
+func (p *LDAPUserProvider) GetSupportedFields() []string {
+	switch p.config.Implementation {
+	case "rfc2307bis":
+		return p.getRFC2307bisSupportedFields()
+	case "activedirectory":
+	}
+	return p.getRFC2307bisSupportedFields()
+}
+
+func (p *LDAPUserProvider) GetDefaultObjectClasses() []string {
+	switch p.config.Implementation {
+	case "rfc2307bis":
+		return p.getRFC2307bisDefaultObjectClasses()
+	case "activedirectory":
+		//return p.getActiveDirectoryDefaultObjectClasses()
+	}
+	return p.getRFC2307bisDefaultObjectClasses()
+}
+
+func (p *LDAPUserProvider) GetFieldMetadata() map[string]FieldMetadata {
+	switch p.config.Implementation {
+	case "rfc2307bis":
+		return p.getRFC2307bisFieldMetadata()
+	case "activedirectory":
+		//return p.getActiveDirectoryFieldMetadata()
+	}
+	return p.getRFC2307bisFieldMetadata()
+}
+
 func (p *LDAPUserProvider) ListUsers() (users []UserDetails, err error) {
 	var client ldap.Client
 

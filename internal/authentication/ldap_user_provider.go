@@ -617,7 +617,7 @@ func (p *LDAPUserProvider) ChangeGroups(username string, newGroups []string) (er
 	return nil
 }
 
-func (p *LDAPUserProvider) AddUser(username, displayName, password string, opts ...func(options *NewUserAdditionalAttributesOpts)) (err error) {
+func (p *LDAPUserProvider) AddUser(username, displayName, password string) (err error) {
 	var client ldap.Client
 
 	if client, err = p.factory.GetClient(); err != nil {
@@ -630,20 +630,18 @@ func (p *LDAPUserProvider) AddUser(username, displayName, password string, opts 
 		}
 	}()
 
-	options := NewUserAdditionalAttributesOpts{}
-	for _, opt := range opts {
-		opt(&options)
-	}
+	//userDN := fmt.Sprintf("%s=%s,%s", p.config.Attributes.Username, ldap.EscapeFilter(username), p.usersBaseDN)
 
-	userDN := fmt.Sprintf("%s=%s,%s", p.config.Attributes.Username, ldap.EscapeFilter(username), p.usersBaseDN)
-
-	addRequest := ldap.NewAddRequest(userDN, nil)
+	//addRequest := ldap.NewAddRequest(userDN, nil)
+	var addRequest *ldap.AddRequest
 
 	switch p.config.Implementation {
 	case "activedirectory":
-		// Do the thing.
+		return fmt.Errorf("unable to create user: %s", "active directory is not implemented.")
 	case "lldap":
 		// since lldap doesn't fully support object creation via LDIF, it is likely that special handling will have to be implemented using the supported api (graphql) via the web api.
+		return fmt.Errorf("unable to create user: %s", "lldap is not implemented.")
+	case "rfc2307bis":
 	default: // this includes rfc2307bis, and likely openldap.
 		// required attributes for rfc2307bis: dn, uid, cn, sn, objectClass.
 		addRequest.Attribute("objectClass", []string{"top", "person", "organizationalPerson", "inetOrgPerson"})

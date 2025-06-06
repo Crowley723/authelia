@@ -6,6 +6,10 @@ import (
 	"github.com/go-ldap/ldap/v3"
 )
 
+const (
+	rfc2307bisLDAPAttributeSurname = "sn"
+)
+
 func (p *LDAPUserProvider) getRFC2307bisRequiredFields() []string {
 	return []string{
 		"Username",
@@ -28,7 +32,6 @@ func (p *LDAPUserProvider) getRFC2307bisSupportedFields() []string {
 		"DN",
 		"ObjectClass",
 		"Extended",
-		"BackendAttributes",
 	}
 }
 
@@ -41,56 +44,9 @@ func (p *LDAPUserProvider) getRFC2307bisDefaultObjectClasses() []string {
 	}
 }
 
-// getRFC2307bisFieldMetadata describes the fields that are required to create new users for the RFC2307bis Backend.
-func (p *LDAPUserProvider) getRFC2307bisFieldMetadata() map[string]FieldMetadata {
-	return map[string]FieldMetadata{
-		"Username": {
-			Required:    true,
-			DisplayName: "Username",
-			Description: "Unique identifier for the user (maps to uid attribute)",
-			Type:        "string",
-			MaxLength:   100,
-		},
-		"Password": {
-			Required:    true,
-			DisplayName: "Password",
-			Description: "User's password",
-			Type:        "password",
-		},
-		"CommonName": {
-			Required:    true,
-			DisplayName: "Common Name",
-			Description: "Full name or display name (maps to cn attribute)",
-			Type:        "string",
-		},
-		"GivenName": {
-			Required:    false,
-			DisplayName: "First Name",
-			Description: "User's first/given name",
-			Type:        "string",
-		},
-		"FamilyName": {
-			Required:    true,
-			DisplayName: "Last Name",
-			Description: "User's last/family name (maps to sn attribute)",
-			Type:        "string",
-		},
-		"Email": {
-			Required:    false,
-			DisplayName: "Email Address",
-			Description: "Primary email address",
-			Type:        "email",
-		},
-		"Groups": {
-			Required:    false,
-			DisplayName: "Groups",
-			Description: "Groups the user should be added to",
-			Type:        "array",
-		},
-	}
-}
-
+// validateRFC2307bisUserData checks that the fields required to create a user are present and follow the proper patterns.
 func (p *LDAPUserProvider) validateRFC2307bisUserData(userData *NewUserData) error {
+	//TODO: implement input validation using regex.
 	if userData.Username == "" {
 		return fmt.Errorf("username required")
 	}
@@ -114,23 +70,33 @@ func (p *LDAPUserProvider) validateRFC2307bisUserData(userData *NewUserData) err
 }
 
 func (p *LDAPUserProvider) createRFC2307bisAddRequest(userData *NewUserData) (*ldap.AddRequest, error) {
-	userDN := fmt.Sprintf("uid=%s,%s", userData.Username, p.usersBaseDN)
+	userDN := fmt.Sprintf("%s=%s,%s", p.config.Attributes.Username, ldap.EscapeFilter(userData.Username), p.usersBaseDN)
 	addRequest := ldap.NewAddRequest(userDN, nil)
 
-	// RFC2307bis requires these object classes
-	addRequest.Attribute("objectClass", []string{"top", "person", "organizationalPerson", "inetOrgPerson"})
-	
-	addRequest.Attribute("uid", []string{userData.Username})
-	addRequest.Attribute("cn", []string{userData.CommonName})
-	addRequest.Attribute("sn", []string{userData.FamilyName})
-	addRequest.Attribute("userPassword", []string{userData.Password})
+	addRequest.Attribute("objectClass", p.getRFC2307bisDefaultObjectClasses())
+	//TODO: allow custom object classes to be define in ldap config (as list).
+	//addRequest.Attribute("objectClass", p.config.Attributes.RequiredObjectClasses)
+
+	addRequest.Attribute(p.config.Attributes.Username, []string{userData.Username})
+	addRequest.Attribute(p.config.Attributes.DisplayName, []string{userData.CommonName})
+	addRequest.Attribute(p.config.Attributes.FamilyName, []string{userData.FamilyName})
+	addRequest.Attribute(ldapAttributeUserPassword, []string{userData.Password})
 
 	// Optional attributes
 	if userData.GivenName != "" {
-		addRequest.Attribute("givenName", []string{userData.GivenName})
+		givenNameAttr := p.config.Attributes.GivenName
+		if p.config.Attributes.GivenName == "" {
+			givenNameAttr = "givenName"
+		}
+		addRequest.Attribute(givenNameAttr, []string{userData.GivenName})
 	}
-	if userData.Email != "" {
-		addRequest.Attribute("mail", []string{userData.Email})
+
+	if userData.GivenName != "" {
+		mailAttr := p.config.Attributes.Mail
+		if p.config.Attributes.Mail == "" {
+			mailAttr = "mail"
+		}
+		addRequest.Attribute(mailAttr, []string{userData.Email})
 	}
 
 	return addRequest, nil
